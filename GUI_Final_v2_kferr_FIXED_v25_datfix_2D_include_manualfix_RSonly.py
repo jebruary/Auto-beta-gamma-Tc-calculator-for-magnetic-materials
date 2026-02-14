@@ -41,6 +41,28 @@ except Exception:
 from scipy import interpolate
 from scipy.optimize import minimize
 from scipy import stats
+
+def _safe_linregress(x, y, *, min_pts: int = 4, eps: float = 0.0):
+    """Robust wrapper for scipy.stats.linregress.
+
+    Returns None if x is degenerate (all/near-identical) or if SciPy raises ValueError.
+    """
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    m = np.isfinite(x) & np.isfinite(y)
+    x = x[m]; y = y[m]
+    if x.size < int(min_pts):
+        return None
+    ptp = float(np.ptp(x))
+    scale = float(np.nanmax(np.abs(x))) if x.size else 0.0
+    tol = max(float(eps), 1e-15 * max(1.0, scale))
+    if (not np.isfinite(ptp)) or (ptp <= tol):
+        return None
+    try:
+        return stats.linregress(x, y)
+    except ValueError:
+        return None
+
 from scipy.optimize import curve_fit
 from scipy.interpolate import UnivariateSpline
 
@@ -525,7 +547,9 @@ class PhysicsEngine:
             x = x[mm]; y = y[mm]
             if x.size < min_pts_eff:
                 return None
-            res = stats.linregress(x, y)
+            res = _safe_linregress(x, y, min_pts=min_pts_eff)
+            if res is None:
+                return None
             if not (np.isfinite(res.slope) and np.isfinite(res.intercept) and np.isfinite(res.rvalue)):
                 return None
             if res.slope <= 0:
@@ -579,7 +603,9 @@ class PhysicsEngine:
             x = x[mm]; y = y[mm]
             if x.size < min_pts_eff:
                 return None
-            res = stats.linregress(x, y)
+            res = _safe_linregress(x, y, min_pts=min_pts_eff)
+            if res is None:
+                return None
             if not (np.isfinite(res.slope) and np.isfinite(res.intercept) and np.isfinite(res.rvalue)):
                 return None
             if res.slope <= 0:
@@ -723,7 +749,9 @@ class PhysicsEngine:
                 x = H[keep] / M[keep]
                 y = M[keep]**2
                 x, y = _robust_sort_xy(x, y)
-                res = stats.linregress(x, y)
+                res = _safe_linregress(x, y, min_pts=10)
+                if res is None:
+                    continue
                 intercept_pen = abs(res.intercept) / (abs(res.slope) + 1e-12)
                 scores.append(intercept_pen + (1 - (res.rvalue**2)))
             if scores:
@@ -1230,6 +1258,7 @@ class PhysicsEngine:
 
     def perform_kf_and_correction(self, use_correction: bool = False, *, omega: float = 0.5,
                                   fit_omega: bool = True,
+                                  override_exponents: bool = True,
                                   update_results: bool = True) -> Tuple[List[Dict], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """Extract Ms(T) and Chi0^{-1}(T) from MAP and do KF (+ optional correction-to-scaling fits).
 
@@ -1651,9 +1680,14 @@ class PhysicsEngine:
 
             self.results['correction_fit'] = fit_results
             if use_correction:
-                self.results['beta'] = float(b_fit)
-                self.results['gamma'] = float(g_fit)
-                self.results['delta'] = 1.0 + float(g_fit) / float(b_fit)
+                # Store correction-to-scaling exponents separately; optionally override the main exponents.
+                self.results['beta_corr'] = float(b_fit)
+                self.results['gamma_corr'] = float(g_fit)
+                self.results['delta_corr'] = 1.0 + float(g_fit) / float(b_fit) if float(b_fit) != 0 else np.nan
+                if override_exponents:
+                    self.results['beta'] = float(b_fit)
+                    self.results['gamma'] = float(g_fit)
+                    self.results['delta'] = 1.0 + float(g_fit) / float(b_fit)
 
             # Cache for plotting
             self.results['kf_map'] = map_res
@@ -2121,16 +2155,18 @@ class PhysicsEngine:
                 ds_at_tc[j] = float(np.interp(tc_use, temps, np.abs(dS[:, j])))
             m = (H_grid > 0.05 * Hmax) & np.isfinite(ds_at_tc) & (ds_at_tc > 1e-12)
             if np.sum(m) > 10:
-                lr = stats.linregress(np.log(H_grid[m]), np.log(ds_at_tc[m]))
-                n_exp_tc = float(lr.slope)
+                lr = _safe_linregress(np.log(H_grid[m]), np.log(ds_at_tc[m]), min_pts=10)
+                if lr is not None:
+                    n_exp_tc = float(lr.slope)
 
         # peak-based exponent (more robust to small Tc offset)
         n_exp_peak = None
         ds_peak = np.nanmax(np.abs(dS), axis=0)
         m2 = (H_grid > 0.05 * Hmax) & np.isfinite(ds_peak) & (ds_peak > 1e-12)
         if np.sum(m2) > 10:
-            lr2 = stats.linregress(np.log(H_grid[m2]), np.log(ds_peak[m2]))
-            n_exp_peak = float(lr2.slope)
+            lr2 = _safe_linregress(np.log(H_grid[m2]), np.log(ds_peak[m2]), min_pts=10)
+            if lr2 is not None:
+                n_exp_peak = float(lr2.slope)
 
         # Theory n at Tc: n = 1 + (β-1)/(β+γ)
         b = float(self.results.get('beta', np.nan))
@@ -2341,7 +2377,9 @@ class PhysicsEngine:
                     continue
                 x = (H / M) ** (1.0 / gamma)
                 y = (M) ** (1.0 / beta)
-                r = stats.linregress(x, y)
+                r = _safe_linregress(x, y, min_pts=6)
+                if r is None:
+                    continue
                 ms = r.intercept ** beta if r.intercept > 0 else np.nan
                 chi_inv = (-r.intercept / r.slope) ** gamma if (r.intercept < 0 and r.slope != 0) else np.nan
                 map_res.append({'T': float(d['T']), 'Ms': ms, 'ChiInv': chi_inv})
@@ -2360,8 +2398,8 @@ class PhysicsEngine:
                 kf = np.where(np.abs(dy) > 1e-12, yv / dy, np.nan)
                 mm = np.isfinite(kf)
                 if np.sum(mm) > 3:
-                    lr = stats.linregress(t[mm], kf[mm])
-                    if lr.slope != 0:
+                    lr = _safe_linregress(t[mm], kf[mm], min_pts=4)
+                    if (lr is not None) and (lr.slope != 0):
                         tc_ms_val = -lr.intercept / lr.slope
 
             tc_chi_val = None
@@ -2373,8 +2411,8 @@ class PhysicsEngine:
                 kf = np.where(np.abs(dy) > 1e-12, yv / dy, np.nan)
                 mm = np.isfinite(kf)
                 if np.sum(mm) > 3:
-                    lr = stats.linregress(t[mm], kf[mm])
-                    if lr.slope != 0:
+                    lr = _safe_linregress(t[mm], kf[mm], min_pts=4)
+                    if (lr is not None) and (lr.slope != 0):
                         tc_chi_val = -lr.intercept / lr.slope
 
             Tc_KF = None
@@ -2654,26 +2692,54 @@ class AnalysisThread(QThread):
                 tc_lock = None
                 for it in range(max(kf_max_iter, 1)):
                     self.log.emit(f"    MAP/KF iteration {it+1}/{max(kf_max_iter,1)} ...")
+                    if fixed_params:
+                        # Manual mode: keep exponents locked to GUI inputs
+                        self.engine.results['beta'] = init_beta
+                        self.engine.results['gamma'] = init_gamma
                     self.engine.perform_kf_and_correction(use_correction=False,
                                                          omega=self.config.get('omega', 0.5),
                                                          fit_omega=self.config.get('fit_omega', True),
                                                          update_results=True)
 
-                    # Update (beta,gamma) using KF slopes when available (damped to avoid oscillations)
-                    b_kf = self.engine.results.get('beta_KF', None)
-                    g_kf = self.engine.results.get('gamma_KF', None)
-                    try:
-                        b_prev = float(self.engine.results.get('beta', init_beta))
-                        g_prev = float(self.engine.results.get('gamma', init_gamma))
-                    except Exception:
-                        b_prev, g_prev = init_beta, init_gamma
+                    if fixed_params:
 
-                    if isinstance(b_kf, (int, float)) and np.isfinite(b_kf):
-                        b_new = 0.80 * float(b_kf) + 0.20 * float(b_prev)
-                        self.engine.results['beta'] = float(np.clip(b_new, 0.10, 0.80))
-                    if isinstance(g_kf, (int, float)) and np.isfinite(g_kf):
-                        g_new = 0.80 * float(g_kf) + 0.20 * float(g_prev)
-                        self.engine.results['gamma'] = float(np.clip(g_new, 0.80, 2.50))
+                        # Manual mode: do NOT iterate exponents; keep GUI values.
+
+                        self.engine.results['beta'] = init_beta
+
+                        self.engine.results['gamma'] = init_gamma
+
+                    else:
+
+                        # Update (beta,gamma) using KF slopes when available (damped to avoid oscillations)
+
+                                            b_kf = self.engine.results.get('beta_KF', None)
+
+                                            g_kf = self.engine.results.get('gamma_KF', None)
+
+                                            try:
+
+                                                b_prev = float(self.engine.results.get('beta', init_beta))
+
+                                                g_prev = float(self.engine.results.get('gamma', init_gamma))
+
+                                            except Exception:
+
+                                                b_prev, g_prev = init_beta, init_gamma
+
+                        
+
+                                            if isinstance(b_kf, (int, float)) and np.isfinite(b_kf):
+
+                                                b_new = 0.80 * float(b_kf) + 0.20 * float(b_prev)
+
+                                                self.engine.results['beta'] = float(np.clip(b_new, 0.10, 0.80))
+
+                                            if isinstance(g_kf, (int, float)) and np.isfinite(g_kf):
+
+                                                g_new = 0.80 * float(g_kf) + 0.20 * float(g_prev)
+
+                                                self.engine.results['gamma'] = float(np.clip(g_new, 0.80, 2.50))
 
                     tc_kf = self.engine.results.get('Tc_KF', None)
                     if tc_kf is None or (isinstance(tc_kf, float) and not np.isfinite(tc_kf)):
@@ -2746,9 +2812,14 @@ class AnalysisThread(QThread):
             if self.config.get('use_correction', False):
                 self.log.emit(">>> Step 2: Correction-to-scaling fit (omega)")
                 self.engine.perform_kf_and_correction(use_correction=True,
+                                                     override_exponents=(not fixed_params),
                                                      omega=self.config.get('omega', 0.5),
                                                      fit_omega=self.config.get('fit_omega', True),
                                                      update_results=True)
+                if fixed_params:
+                    # Manual mode: keep exponents locked even after correction fit
+                    self.engine.results['beta'] = init_beta
+                    self.engine.results['gamma'] = init_gamma
                 # After correction, if Tc is KF-locked, enforce again
                 if lock_tc_to_kf:
                     tc_kf = self.engine.results.get('Tc_KF', None)
@@ -2812,7 +2883,7 @@ class AnalysisThread(QThread):
             self.progress.emit(70)
 
             # ---- Step 5: Joint fit (optional) ----
-            if self.config.get('joint_fit', False) and self.engine.mce_data is not None:
+            if (not fixed_params) and self.config.get('joint_fit', False) and self.engine.mce_data is not None:
                 self.log.emit(">>> Step 5: Joint fit (M + MCE)...")
                 tc_fix = float(self.engine.results.get('Tc', tc_seed)) if lock_tc_to_kf else None
                 self.engine.optimize_joint_scaling(init=(float(self.engine.results['beta']),
@@ -2824,7 +2895,7 @@ class AnalysisThread(QThread):
             self.progress.emit(78)
 
             # ---- Step 6: GP scaling (optional) ----
-            if self.config.get('use_gp', False) and SKLEARN_AVAILABLE:
+            if (not fixed_params) and self.config.get('use_gp', False) and SKLEARN_AVAILABLE:
                 self.log.emit(">>> Step 6: GP/Bayesian scaling...")
                 self.engine.perform_gp_scaling(mcmc=self.config.get('gp_mcmc', True))
 
@@ -2851,7 +2922,7 @@ class AnalysisThread(QThread):
                                               fixed_params=fixed_params)
 
             self.progress.emit(96)
-            if self.config.get('mcmc', False):
+            if (not fixed_params) and self.config.get('mcmc', False):
                 self.log.emit(">>> Step 8b: MCMC uncertainty...")
                 self.engine.mcmc_uncertainty(target=self.config.get('mcmc_target', 'collapse'),
                                              n=self.config.get('mcmc_n', 2000))

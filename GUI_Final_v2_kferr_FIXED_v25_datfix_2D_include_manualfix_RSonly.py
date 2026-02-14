@@ -2770,7 +2770,7 @@ class AnalysisThread(QThread):
                         if ((not np.isfinite(b_kf_chk)) or (not np.isfinite(g_kf_chk)) or
                             (b_kf_chk < 0.25) or (b_kf_chk > 0.60) or
                             (g_kf_chk < 0.80) or (g_kf_chk > 2.20) or
-                            (not np.isfinite(tcse)) or (tcse > 1.0)):
+                            (not np.isfinite(tcse)) or (tcse > 0.05 * abs(tc_lock))):
                             self.log.emit("    KF fit looks unreliable -> switching to discrete Tc collapse.")
                             self.engine.results['Tc_source'] = 'collapse'
                     except Exception:

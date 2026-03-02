@@ -22,7 +22,7 @@ A comprehensive Python-based tool suite (featuring both GUI and CLI) designed fo
 ```bash
 python GUI_Final_v2_kferr_FIXED_v26.py
 
-2. Run Headless CLI:
+** 2. Run Headless CLI: **
 python FinalArrot+KFplot_v2.py --data ./your_data/*.txt --bc 0.2 --out ./output_dir --use-eos --joint-fit
 
 Dependencies

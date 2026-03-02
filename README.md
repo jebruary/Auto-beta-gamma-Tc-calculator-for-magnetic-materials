@@ -21,7 +21,7 @@ A comprehensive Python-based tool suite (featuring both a GUI and CLI) designed 
 ## Quick Start
 
 **1. Launch the Interactive GUI:**
-Download all scripts and run python GUI_Final_v2_kferr_FIXED_v26.py
+Download all scripts and run python "GUI_Final_v2_kferr_FIXED_v26.py"
 
 **2. Run Headless CLI Analysis(Optional):**
 python FinalArrot+KFplot_v2.py --data ./data/*.txt --bc 0.2 --out ./output_dir --use-eos --joint-fit

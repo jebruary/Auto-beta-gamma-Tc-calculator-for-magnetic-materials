@@ -21,16 +21,12 @@ A comprehensive Python-based tool suite (featuring both a GUI and CLI) designed 
 ## Quick Start
 
 **1. Launch the Interactive GUI:**
+Download all scripts and run python GUI_Final_v2_kferr_FIXED_v26.py
 
-python GUI_Final_v2_kferr_FIXED_v26.py
-
-**2. Run Headless CLI Analysis:**
+**2. Run Headless CLI Analysis(Optional):**
 python FinalArrot+KFplot_v2.py --data ./data/*.txt --bc 0.2 --out ./output_dir --use-eos --joint-fit
 
-
-**3. Run Parameter Diagnostics:**
-
-
+**3. Run Parameter Diagnostics(Optional):**
 python linear_fitting_with_gammas_and_betas_v2_2D.py --files ./data/*.txt --min_points 10
 
 ## Requirements

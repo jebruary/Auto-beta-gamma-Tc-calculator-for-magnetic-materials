@@ -2,27 +2,6 @@
 # -*- coding: utf-8 -*-
 """linear fitting with gammas and betas_v2.py
 
-辅助诊断 / 初值选择工具（保留作为“辅助诊断/初值选择工具”）。
-
-做什么
-- 对候选 universality class (beta,gamma) 进行 Modified Arrott Plot (MAP) 高场线性诊断
-- 在一组等温数据上 *汇总* 线性度 (R^2) 与 “截距接近 0” 程度，给出更稳健的初值建议
-
-相对 v1 的改进
-- 不再只用“代表单个温度文件”做诊断；改为对所有等温线取中位数评分，避免选到“碰巧线性”的那条。
-- 评分更强调 |intercept|→0（这和 MAP 的“正确 beta/gamma”更相关），同时保留 R^2 作为线性度保障。
-- 允许同时扫描多个高场阈值（|H|>=f*Hmax 或绝对阈值）。
-
-输入
-- 一组等温 M(H) 文件（自动从文件名识别温度）
-
-输出
-- 每个 universality model、每个高场规则下：
-  - 各温度拟合的中位数 R^2
-  - 归一化截距 |b|/(|m|+eps) 的中位数
-  - 综合 score（越大越好）
-- 推荐 top-N 组合（可直接作为 GUI_Final_v2 的 init_beta/init_gamma, Bc 初值的先验参考）
-
 """
 
 from __future__ import annotations

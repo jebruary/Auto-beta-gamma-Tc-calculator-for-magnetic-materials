@@ -7,31 +7,6 @@ CLI runner + literature validation for the same analysis core used by GUI_Final_
 Why this file exists
 - Some users want a headless / batch mode (no GUI).
 - It can also validate key steps against classic Kouvel–Fisher nickel data.
-
-Implements the 8 requested upgrades (see 代码修改建议.docx) by calling the backend
-engine methods in GUI_Final_v2.py:
-  1) data-collapse optimization (beta, gamma, Tc)
-  2) universality-class comparison
-  3) bootstrap + simple Metropolis MCMC for error bars
-  4) confluent-correction fits (omega)
-  5) GP/Bayesian scaling (GP likelihood + MCMC posterior)
-  6) universal parametric EOS fits (Ising / Heisenberg / Mean-field)
-  7) advanced MCE differentiation + uncertainty
-  8) joint/global objective (M scaling + MCE scaling)
-
-Validation dataset (classic):
-- Phys. Rev. 136, A1626 (1964) Kouvel & Fisher, Table II (susceptibility) and
-  Table III (critical isotherm exponent).
-
-Usage examples
-  # 1) Validate the classic Kouvel–Fisher nickel tables
-  python "FinalArrot+KFplot_v2.py" --validate-kf-nickel \
-    --kf-pdf /mnt/data/literature/PhysRev_136_A1626.pdf
-
-  # 2) Run a full analysis on your M(H,T) files
-  python "FinalArrot+KFplot_v2.py" --data ./data/*.txt --bc 0.2 --out outdir \
-    --use-gp --use-eos --bootstrap 200 --mcmc 3000 --joint-fit
-
 """
 
 from __future__ import annotations

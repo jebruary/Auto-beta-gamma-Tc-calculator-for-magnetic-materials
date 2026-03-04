@@ -4,17 +4,6 @@
 
 Magnetic critical behavior + MCE analysis GUI.
 
-Implements (per 代码修改建议.docx):
-1) Quantitative data-collapse optimization for (beta, gamma, Tc)
-2) Automatic universality-class comparison
-3) Uncertainty estimates via bootstrap + simple Metropolis MCMC
-4) Confluent-correction fits (with omega)
-5) GP/Bayesian scaling (GP likelihood + MCMC posterior)
-6) RG-inspired universal EOS (parametric representation) fit (Ising/Heisenberg + mean-field)
-7) Advanced MCE differentiation with smoothing + uncertainty propagation
-8) Joint/global objective combining magnetization scaling + MCE scaling (self-consistency)
-
-Author: (integrated and patched)
 """
 
 from __future__ import annotations
@@ -27,17 +16,8 @@ import traceback
 import csv
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, Tuple
-
 import numpy as np
-
-# Optional, but provides much more robust CSV/TSV/Excel ingestion.
-try:
-    import pandas as pd  # type: ignore
-    _PANDAS_OK = True
-except Exception:
-    pd = None  # type: ignore
-    _PANDAS_OK = False
-
+import pandas as pd
 from scipy import interpolate
 from scipy.optimize import minimize
 from scipy import stats
@@ -2335,16 +2315,6 @@ class PhysicsEngine:
                            tc_fixed: Optional[float] = None,
                            fixed_params: bool = False) -> Dict:
         """Bootstrap resampling within each isotherm (WITHOUT changing final fit).
-
-        Bugfix (v19):
-        - The previous implementation called optimize_data_collapse() with update_results=True
-          inside the bootstrap loop, which overwrote self.results['beta','gamma','Tc'] and
-          caused *post-bootstrap* plots/summary to disagree with the KF intercept.
-        - We now:
-            (1) keep a copy of the final fitted parameters,
-            (2) run bootstrap fits with update_results=False,
-            (3) restore the final parameters at the end.
-
         tc_fixed:
             If provided (or if Tc_source=='KF'), each bootstrap replicate estimates Tc via KF
             (or uses tc_fixed), then optimizes only beta/gamma with Tc fixed.

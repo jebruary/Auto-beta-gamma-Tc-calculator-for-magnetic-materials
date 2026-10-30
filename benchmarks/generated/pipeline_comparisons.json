@@ -1,0 +1,38 @@
+[
+  {
+    "variant": "fixed_Tc",
+    "status": "success",
+    "flags": [],
+    "beta": 0.4999858035971882,
+    "gamma": 0.9999728663915413,
+    "Tc": 100.0,
+    "elapsed_seconds": 0.6754592000506818
+  },
+  {
+    "variant": "reestimate_Tc",
+    "status": "success",
+    "flags": [],
+    "beta": 0.4999742677068978,
+    "gamma": 0.9999357895619922,
+    "Tc": 100.00009775020138,
+    "elapsed_seconds": 0.5270704999566078
+  },
+  {
+    "variant": "fixed_window",
+    "status": "success",
+    "flags": [],
+    "beta": 0.4999858035971845,
+    "gamma": 0.999972866391541,
+    "Tc": 99.99999999999974,
+    "elapsed_seconds": 0.3845826000906527
+  },
+  {
+    "variant": "auto_cutoff",
+    "status": "success",
+    "flags": [],
+    "beta": 0.4999742677068978,
+    "gamma": 0.9999357895619922,
+    "Tc": 100.00009775020138,
+    "elapsed_seconds": 1.6013184001203626
+  }
+]

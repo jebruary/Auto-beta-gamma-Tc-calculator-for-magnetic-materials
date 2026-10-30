@@ -1,0 +1,57 @@
+{
+  "n_ranking": 100,
+  "truth_best": 100,
+  "n_recoveries": 100,
+  "fit_success": 100,
+  "parameter_metrics": [
+    {
+      "model": "mean_field",
+      "n": 25,
+      "bias": [
+        0.0006974809898148937,
+        0.0005658599453703461
+      ],
+      "rmse": [
+        0.004956551120837912,
+        0.009913391467972809
+      ]
+    },
+    {
+      "model": "independent_XY_effective",
+      "n": 25,
+      "bias": [
+        0.0001134030485567572,
+        -0.0007705582019633183
+      ],
+      "rmse": [
+        0.0005538140051794618,
+        0.001977068051751554
+      ]
+    },
+    {
+      "model": "independent_Ising2D",
+      "n": 25,
+      "bias": [
+        0.00020028163478015448,
+        -0.00039382881600232624
+      ],
+      "rmse": [
+        0.0004620733158463924,
+        0.0014778995230887403
+      ]
+    },
+    {
+      "model": "independent_tricritical",
+      "n": 25,
+      "bias": [
+        9.061917671461917e-05,
+        -0.0004826163297964614
+      ],
+      "rmse": [
+        0.0005023096442569962,
+        0.0011200130354076369
+      ]
+    }
+  ],
+  "interval_coverage": "not established; loss-based and bootstrap intervals are not labelled calibrated"
+}

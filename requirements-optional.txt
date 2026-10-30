@@ -1,0 +1,7 @@
+-r requirements.txt
+PyQt5>=5.15,<6
+scikit-learn>=1.5,<2
+pytest>=8,<10
+pypdf>=5,<7
+PyMuPDF>=1.24,<2
+

@@ -1,0 +1,26 @@
+[
+  {
+    "beta": 0.5,
+    "gamma": 1,
+    "original_cost": 331.8572143459617,
+    "revised_cost": 8.325887662781143e-10
+  },
+  {
+    "beta": 0.35,
+    "gamma": 1.4,
+    "original_cost": 3.4700932472394137,
+    "revised_cost": 0.027508317903455794
+  },
+  {
+    "beta": 0.23,
+    "gamma": 2.2,
+    "original_cost": 3.216888829396923,
+    "revised_cost": 0.16046229844340568
+  },
+  {
+    "beta": 0.8,
+    "gamma": 0.8,
+    "original_cost": 5.863345209479083,
+    "revised_cost": 0.03488092052675544
+  }
+]
